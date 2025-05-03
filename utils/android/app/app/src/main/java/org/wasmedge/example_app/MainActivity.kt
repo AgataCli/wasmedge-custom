@@ -10,6 +10,8 @@ import android.widget.*
 class MainActivity : AppCompatActivity() {
 
     lateinit var lib: NativeLib
+    var lastLogTimestamp: String? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,11 +55,28 @@ class MainActivity : AppCompatActivity() {
             tv.text = "Executando $funcName em $wasmFile..."
 
             Thread {
+                // Limpa o log para evitar repetições
+                Runtime.getRuntime().exec("logcat -c").waitFor()
+
                 val result = lib.runWasmFunction(wasmFile, funcName)
+
+                val process = Runtime.getRuntime().exec("logcat -d WasmImportLogger:I *:S")
+                val reader = process.inputStream.bufferedReader()
+
+                val logOutput = StringBuilder()
+                reader.forEachLine { line ->
+                    // Pega apenas a parte depois de "Importando"
+                    val index = line.indexOf("Importando")
+                    if (index >= 0) {
+                        logOutput.appendLine(line.substring(index))
+                    }
+                }
+
                 runOnUiThread {
-                    tv.text = "Resultado de $funcName: $result"
+                    tv.text = logOutput.toString()
                 }
             }.start()
+
         }
     }
 }
