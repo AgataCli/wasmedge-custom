@@ -58,24 +58,42 @@ class MainActivity : AppCompatActivity() {
                 // Limpa o log para evitar repetições
                 Runtime.getRuntime().exec("logcat -c").waitFor()
 
+                // Executa o módulo
                 val result = lib.runWasmFunction(wasmFile, funcName)
 
-                val process = Runtime.getRuntime().exec("logcat -d WasmImportLogger:I *:S")
+                // Lê os logs após a execução
+                val process = Runtime.getRuntime().exec("logcat -d WasmImportLogger:I WasmDinamicLogger:I *:S")
                 val reader = process.inputStream.bufferedReader()
 
-                val logOutput = StringBuilder()
+                val staticLog = StringBuilder()
+                val dynamicLog = StringBuilder()
+
                 reader.forEachLine { line ->
-                    // Pega apenas a parte depois de "Importando"
-                    val index = line.indexOf("Importando")
-                    if (index >= 0) {
-                        logOutput.appendLine(line.substring(index))
+                    when {
+                        line.contains("WasmImportLogger") && line.contains("Importando") -> {
+                            val index = line.indexOf("Importando")
+                            if (index >= 0) staticLog.appendLine(line.substring(index))
+                        }
+                        line.contains("WasmDinamicLogger") -> {
+                            val index = line.indexOf("Funcao") // ou "Arg[" se quiser ser mais amplo
+                            val msg = if (index >= 0) line.substring(index) else line
+                            dynamicLog.appendLine(msg)
+                        }
                     }
                 }
+
+                val logOutput = StringBuilder()
+                logOutput.appendLine("Captura Estática:")
+                logOutput.appendLine(staticLog.toString().trim())
+                logOutput.appendLine()
+                logOutput.appendLine("Captura Dinâmica:")
+                logOutput.appendLine(dynamicLog.toString().trim())
 
                 runOnUiThread {
                     tv.text = logOutput.toString()
                 }
             }.start()
+
 
         }
     }

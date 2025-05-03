@@ -22,6 +22,9 @@
 #include <tuple>
 #include <vector>
 
+#include <android/log.h>
+#define LOG_TAG "WasmImportLogger"
+
 namespace WasmEdge {
 namespace Runtime {
 
@@ -70,7 +73,28 @@ public:
     if (unlikely(F::RetsN != Rets.size())) {
       return Unexpect(ErrCode::Value::FuncSigMismatch);
     }
-    return invoke(CallFrame, Args.first<F::ArgsN>(), Rets.first<F::RetsN>());
+      // Log para capturar execução da função
+      __android_log_print(
+              ANDROID_LOG_INFO,
+              "WasmDinamicLogger",
+              "Funcao WASI Executada: ArgsCount = %zu, RetsCount = %zu, Custo = %lu",
+              Args.size(),
+              Rets.size(),
+              getCost()
+      );
+
+// Log detalhado dos argumentos
+      for (size_t i = 0; i < Args.size(); ++i) {
+          __android_log_print(
+                  ANDROID_LOG_INFO,
+                  "WasmDinamicLogger",
+                  "Arg[%zu]: Valor = %d",
+                  i,
+                  Args[i].get<int32_t>()
+          );
+      }
+
+      return invoke(CallFrame, Args.first<F::ArgsN>(), Rets.first<F::RetsN>());
   }
 
 protected:
