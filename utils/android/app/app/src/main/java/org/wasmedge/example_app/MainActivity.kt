@@ -55,29 +55,40 @@ class MainActivity : AppCompatActivity() {
             tv.text = "Executando $funcName em $wasmFile..."
 
             Thread {
-                // Limpa o log para evitar repetições
+                // Limpa o log
                 Runtime.getRuntime().exec("logcat -c").waitFor()
 
                 // Executa o módulo
-                val result = lib.runWasmFunction(wasmFile, funcName)
+                lib.runWasmFunction(wasmFile, funcName)
 
-                // Lê os logs após a execução
+                // Lê logs filtrados
                 val process = Runtime.getRuntime().exec("logcat -d WasmImportLogger:I WasmDinamicLogger:I *:S")
                 val reader = process.inputStream.bufferedReader()
 
                 val staticLog = StringBuilder()
                 val dynamicLog = StringBuilder()
+                val staticFunctions = mutableSetOf<String>()
 
                 reader.forEachLine { line ->
-                    when {
-                        line.contains("WasmImportLogger") && line.contains("Importando") -> {
-                            val index = line.indexOf("Importando")
-                            if (index >= 0) staticLog.appendLine(line.substring(index))
+                    // Captura logs estáticos
+                    if (line.contains("WasmImportLogger") && line.contains("Importando")) {
+                        val idx = line.indexOf("Importando")
+                        if (idx >= 0) {
+                            val staticLine = line.substring(idx)
+                            staticLog.appendLine(staticLine)
+
+                            // Extrai o nome da função importada
+                            val funcMatch = Regex("Função: ([a-zA-Z0-9_]+)").find(staticLine)
+                            funcMatch?.groupValues?.get(1)?.let { staticFunctions.add(it) }
                         }
-                        line.contains("WasmDinamicLogger") -> {
-                            val index = line.indexOf("Funcao") // ou "Arg[" se quiser ser mais amplo
-                            val msg = if (index >= 0) line.substring(index) else line
-                            dynamicLog.appendLine(msg)
+                    }
+
+                    // Captura apenas o nome da função executada dinamicamente
+                    if (line.contains("WasmDinamicLogger") && line.contains("Funcao WASI Executada: Nome")) {
+                        val match = Regex("Nome = ([^,\\s]+)").find(line)
+                        val funcName = match?.groupValues?.get(1)?.substringAfterLast("::")  // remove namespaces
+                        if (funcName != null) {
+                            dynamicLog.appendLine("Função Executada: $funcName")
                         }
                     }
                 }
@@ -94,8 +105,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }.start()
 
-
         }
     }
+
+
+
 }
 

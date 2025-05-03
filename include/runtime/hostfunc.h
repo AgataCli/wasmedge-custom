@@ -22,6 +22,8 @@
 #include <tuple>
 #include <vector>
 
+#include <typeinfo>
+#include <cxxabi.h>
 #include <android/log.h>
 #define LOG_TAG "WasmImportLogger"
 
@@ -74,25 +76,29 @@ public:
       return Unexpect(ErrCode::Value::FuncSigMismatch);
     }
       // Log para capturar execução da função
+      int status;
+      char* demangled = abi::__cxa_demangle(typeid(T).name(), 0, 0, &status);
+
       __android_log_print(
               ANDROID_LOG_INFO,
               "WasmDinamicLogger",
-              "Funcao WASI Executada: ArgsCount = %zu, RetsCount = %zu, Custo = %lu",
+              "Funcao WASI Executada: Nome = %s, ArgsCount = %zu, RetsCount = %zu",
+              (status == 0 ? demangled : typeid(T).name()),  // Nome da classe associada à função WASI
               Args.size(),
-              Rets.size(),
-              getCost()
+              Rets.size()
       );
+      free(demangled);
 
 // Log detalhado dos argumentos
-      for (size_t i = 0; i < Args.size(); ++i) {
-          __android_log_print(
-                  ANDROID_LOG_INFO,
-                  "WasmDinamicLogger",
-                  "Arg[%zu]: Valor = %d",
-                  i,
-                  Args[i].get<int32_t>()
-          );
-      }
+//      for (size_t i = 0; i < Args.size(); ++i) {
+//          __android_log_print(
+//                  ANDROID_LOG_INFO,
+//                  "WasmDinamicLogger",
+//                  "Arg[%zu]: Valor = %d",
+//                  i,
+//                  Args[i].get<int32_t>()
+//          );
+//      }
 
       return invoke(CallFrame, Args.first<F::ArgsN>(), Rets.first<F::RetsN>());
   }
@@ -112,7 +118,21 @@ protected:
     if constexpr (F::hasReturn) {
       EXPECTED_TRY(typename F::RetsT RetTuple,
                    std::apply(&T::body, std::move(FuncArgTuple)));
-      fromTuple(std::forward<SpanR>(Rets), std::move(RetTuple),
+
+        if constexpr (F::RetsN == 1) {
+            uint32_t code = std::get<0>(RetTuple);
+            const char* status = (code == 0) ? "SUCESSO" : "ERRO";
+
+            __android_log_print(
+                    ANDROID_LOG_INFO,
+                    "WasmDinamicLogger",
+                    "Retorno: %u (%s)",
+                    code, status
+            );
+        }
+
+
+        fromTuple(std::forward<SpanR>(Rets), std::move(RetTuple),
                 std::make_index_sequence<F::RetsN>());
     } else {
       EXPECTED_TRY(std::apply(&T::body, std::move(FuncArgTuple)));
