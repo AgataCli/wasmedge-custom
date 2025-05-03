@@ -4,16 +4,39 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:padding="16dp">
+
+    <Spinner
+        android:id="@+id/wasm_selector"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:spinnerMode="dropdown" />
+
+    <Button
+        android:id="@+id/run_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Executar módulo"
+        app:layout_constraintTop_toBottomOf="@id/wasm_selector"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="12dp" />
 
     <TextView
         android:id="@+id/tv_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Idle"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:text="Saída aqui..."
+        android:textIsSelectable="true"
+        android:scrollbars="vertical"
+        android:gravity="top"
+        android:padding="12dp"
+        app:layout_constraintTop_toBottomOf="@id/run_button"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

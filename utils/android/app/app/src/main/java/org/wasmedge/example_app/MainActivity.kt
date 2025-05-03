@@ -5,41 +5,60 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import org.wasmedge.native_lib.NativeLib
 import java.util.*
+import android.widget.*
 
 class MainActivity : AppCompatActivity() {
+
     lateinit var lib: NativeLib
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val spinner = findViewById<Spinner>(R.id.wasm_selector)
+        val button = findViewById<Button>(R.id.run_button)
         val tv = findViewById<TextView>(R.id.tv_text)
+
         lib = NativeLib(this)
 
-        Thread {
-            val lines = mutableListOf<String>()
-            val testModules = listOf(
-                "n1_write_file.wasm" to "write_file",
-                "n1_read_file.wasm" to "read_file",
-                "n1_get_timestamp.wasm" to "get_timestamp",
-                "n2_create_multiple_files.wasm" to "create_multiple_files",
-                "n2_access_parent_directory.wasm" to "access_parent_directory",
-                "n2_allocate_large_memory.wasm" to "allocate_large_memory",
-                "n2_open_restricted_file.wasm" to "open_restricted_file",
-                "n2_open_network_socket.wasm" to "open_network_socket",
-                "n3_execute_external_process.wasm" to "execute_external_process",
-                "n3_infinite_loop.wasm" to "infinite_loop",
-                "n3_check_env_vars.wasm" to "check_env_vars",
-                "n3_write_outside_sandbox.wasm" to "write_outside_sandbox"
-            )
+        // Lista dos módulos disponíveis: nome visível -> (arquivo.wasm, função)
+        val wasmModules = mapOf(
+            "N1 - Escrever arquivo" to ("n1_write_file.wasm" to "write_file"),
+            "N1 - Ler arquivo" to ("n1_read_file.wasm" to "read_file"),
+            "N1 - Obter timestamp" to ("n1_get_timestamp.wasm" to "get_timestamp"),
 
-            for ((file, func) in testModules) {
-                lines.add("Executando $func em $file")
-                runOnUiThread { tv.text = lines.joinToString("\n") }
-                val result = lib.runWasmFunction(file, func)
-                lines.add("Resultado: $result")
-                runOnUiThread { tv.text = lines.joinToString("\n") }
-            }
-        }.start()
+            "N2 - Criar múltiplos arquivos" to ("n2_create_multiple_files.wasm" to "create_multiple_files"),
+            "N2 - Acessar diretório pai" to ("n2_access_parent_directory.wasm" to "access_parent_directory"),
+            "N2 - Alocar 100MB" to ("n2_allocate_large_memory.wasm" to "allocate_large_memory"),
+            "N2 - Abrir /etc/passwd" to ("n2_open_restricted_file.wasm" to "open_restricted_file"),
+            "N2 - Abrir socket localhost" to ("n2_open_network_socket.wasm" to "open_network_socket"),
+
+            "N3 - Executar processo externo" to ("n3_execute_external_process.wasm" to "execute_external_process"),
+            "N3 - Loop infinito" to ("n3_infinite_loop.wasm" to "infinite_loop"),
+            "N3 - Checar variáveis ambiente" to ("n3_check_env_vars.wasm" to "check_env_vars"),
+            "N3 - Escrever fora do sandbox" to ("n3_write_outside_sandbox.wasm" to "write_outside_sandbox")
+        )
+
+
+        val labels = wasmModules.keys.toList()
+
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, labels)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
+
+        button.setOnClickListener {
+            val label = spinner.selectedItem as String
+            val (wasmFile, funcName) = wasmModules[label]!!
+
+            tv.text = "Executando $funcName em $wasmFile..."
+
+            Thread {
+                val result = lib.runWasmFunction(wasmFile, funcName)
+                runOnUiThread {
+                    tv.text = "Resultado de $funcName: $result"
+                }
+            }.start()
+        }
     }
 }
+
