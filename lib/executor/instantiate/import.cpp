@@ -10,6 +10,9 @@
 #include <string_view>
 #include <utility>
 
+#include <android/log.h>
+#define LOG_TAG "WasmImportLogger"
+
 using namespace std::literals;
 
 namespace WasmEdge {
@@ -117,6 +120,12 @@ Expect<void> Executor::instantiate(Runtime::StoreManager &StoreMgr,
     auto ModName = ImpDesc.getModuleName();
     auto ExtName = ImpDesc.getExternalName();
     const auto *ImpModInst = StoreMgr.findModule(ModName);
+
+      // Log para o logcat
+      __android_log_print(ANDROID_LOG_INFO, LOG_TAG, "Importando Módulo: %.*s, Função: %.*s",
+      static_cast<int>(ModName.size()), ModName.data(),
+              static_cast<int>(ExtName.size()), ExtName.data());
+
     if (unlikely(ImpModInst == nullptr)) {
       auto Res = logUnknownError(ModName, ExtName, ExtType);
       if (ModName == "wasi_snapshot_preview1"sv) {
