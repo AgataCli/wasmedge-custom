@@ -2,8 +2,8 @@ package org.wasmedge.native_lib
 
 import android.content.Context
 
-class NativeLib(ctx : Context) {
-    private external fun nativeWasmFibonacci(imageBytes : ByteArray, idx : Int ) : Int
+class NativeLib(private val ctx : Context) {
+    private external fun nativeRunWasm(imageBytes : ByteArray, funcName: String) : Int
 
     companion object {
         init {
@@ -11,9 +11,8 @@ class NativeLib(ctx : Context) {
         }
     }
 
-    private var fibonacciWasmImageBytes : ByteArray = ctx.assets.open("fibonacci.wasm").readBytes()
-
-    fun wasmFibonacci(idx : Int) : Int{
-        return nativeWasmFibonacci(fibonacciWasmImageBytes, idx)
+    fun runWasmFunction(wasmFile: String, funcName: String): Int {
+        val wasmBytes = ctx.assets.open(wasmFile).readBytes()
+        return nativeRunWasm(wasmBytes, funcName)
     }
 }
