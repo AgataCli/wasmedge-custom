@@ -1,3 +1,5 @@
+# Este repositório é um fork do projeto principal com alterações referente a Demo Android em utils/.
+
 <div align="right">
 
   [中文](README-zh.md) | [正體中文](README-zh-TW.md) | [日本語で読む](README-ja.md)
